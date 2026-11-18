@@ -23,14 +23,13 @@ WinFinder leaves your keys alone when you're typing: renaming a file, using the 
 - **Accessibility** (required): lets WinFinder see and remap key presses. Turn on WinFinder in **System Settings → Privacy & Security → Accessibility**. WinFinder starts working within a couple of seconds, with no relaunch needed.
 - **Automation → Finder**: needed only for creating new text documents. macOS asks the first time you press Ctrl+Shift+N or ⌘⇧T.
 
-To start WinFinder automatically, add it under **System Settings → General → Login Items**.
-
 ## Menu bar
 
 Click the folder icon in the menu bar to:
 
 - turn remapping on or off (**Enabled**)
 - check whether Accessibility permission has been granted
+- **Open at Login**: start WinFinder automatically when you log in. If macOS asks you to approve it, turn WinFinder on in **System Settings → General → Login Items**.
 - **Hide Menu Bar Icon**: WinFinder keeps running with no icon. To show the icon again, open WinFinder again from Applications, Spotlight or Launchpad.
 - quit
 

@@ -1,4 +1,5 @@
 import AppKit
+import ServiceManagement
 
 /// The status bar item and its menu.
 final class MenuBarController: NSObject, NSMenuDelegate {
@@ -9,6 +10,7 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     private let enabledItem = NSMenuItem(title: "Enabled", action: #selector(toggleEnabled), keyEquivalent: "")
     private let permissionItem = NSMenuItem(title: "", action: #selector(openAccessibilitySettings), keyEquivalent: "")
     private let tapStatusItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let loginItem = NSMenuItem(title: "Open at Login", action: #selector(toggleOpenAtLogin), keyEquivalent: "")
 
     private static let hideIconDefaultsKey = "HideMenuBarIcon"
 
@@ -42,6 +44,9 @@ final class MenuBarController: NSObject, NSMenuDelegate {
         menu.addItem(tapStatusItem)
 
         menu.addItem(.separator())
+        loginItem.target = self
+        menu.addItem(loginItem)
+
         let hideItem = NSMenuItem(title: "Hide Menu Bar Icon", action: #selector(hideIcon), keyEquivalent: "")
         hideItem.target = self
         hideItem.toolTip = "Open WinFinder again (e.g. from Spotlight) to show the icon."
@@ -74,6 +79,18 @@ final class MenuBarController: NSObject, NSMenuDelegate {
 
         tapStatusItem.title = tapManager.isRunning ? "Key remapping: Active" : "Key remapping: Waiting for permission"
 
+        switch SMAppService.mainApp.status {
+        case .enabled:
+            loginItem.state = .on
+            loginItem.title = "Open at Login"
+        case .requiresApproval:
+            loginItem.state = .mixed
+            loginItem.title = "Open at Login (Needs Approval in Settings…)"
+        default:
+            loginItem.state = .off
+            loginItem.title = "Open at Login"
+        }
+
         statusItem.button?.appearsDisabled = !(tapManager.isEnabled && tapManager.isRunning)
     }
 
@@ -88,6 +105,32 @@ final class MenuBarController: NSObject, NSMenuDelegate {
     @objc private func toggleEnabled() {
         tapManager.isEnabled.toggle()
         NSLog("WinFinder: remapping %@", tapManager.isEnabled ? "enabled" : "disabled")
+        refresh()
+    }
+
+    @objc private func toggleOpenAtLogin() {
+        let service = SMAppService.mainApp
+        do {
+            switch service.status {
+            case .enabled:
+                try service.unregister()
+            case .requiresApproval:
+                SMAppService.openSystemSettingsLoginItems()
+            default:
+                try service.register()
+                if service.status == .requiresApproval {
+                    SMAppService.openSystemSettingsLoginItems()
+                }
+            }
+        } catch {
+            NSLog("WinFinder: failed to update login item: %@", error.localizedDescription)
+            let alert = NSAlert(error: error)
+            alert.messageText = "Couldn't change Open at Login"
+            alert.informativeText = "\(error.localizedDescription)\n\nYou can add WinFinder manually in System Settings → General → Login Items."
+            NSApp.activate(ignoringOtherApps: true)
+            alert.runModal()
+        }
+        NSLog("WinFinder: open at login is %@", service.status == .enabled ? "on" : "off")
         refresh()
     }
 
